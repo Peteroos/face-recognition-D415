@@ -1,4 +1,4 @@
-# Real-Time Face Recognition
+# Real-Time Face Recognition with Intel Realsense camera
 
 ## Table of Contents
 
