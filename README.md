@@ -1,11 +1,5 @@
 # Real-Time Face Recognition
 
-   <p align="center">
-   <img src="./assets/face-recognition.gif" alt="Face Recognition" />
-   <br>
-   <em>Face Recognition</em>
-   </p>
-
 ## Table of Contents
 
 - [Architecture](#architecture)
