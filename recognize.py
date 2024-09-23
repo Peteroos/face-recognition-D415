@@ -15,11 +15,13 @@ from face_recognition.arcface.utils import compare_encodings, read_features
 from face_tracking.tracker.byte_tracker import BYTETracker
 from face_tracking.tracker.visualize import plot_tracking
 
+import pyrealsense2 as rs
+
 # Device configuration
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Face detector (choose one)
-detector = SCRFD(model_file="face_detection/scrfd/weights/scrfd_2.5g_bnkps.onnx")
+detector = SCRFD(model_file="face_detection/scrfd/weights/scrfd_10g_bnkps.onnx")
 # detector = Yolov5Face(model_file="face_detection/yolov5_face/weights/yolov5n-face.pt")
 
 # Face recognizer
@@ -42,6 +44,33 @@ data_mapping = {
     "tracking_bboxes": [],
 }
 
+
+
+# Initialize Intel RealSense pipeline
+pipeline = rs.pipeline()
+config = rs.config()
+config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)  # 设置为彩色图像流
+
+# Start the RealSense pipeline
+pipeline.start(config)
+
+def get_frame_from_realsense():
+    """
+    Capture a frame from Intel RealSense camera.
+    
+    Returns:
+        numpy.ndarray: The captured frame in BGR format.
+    """
+    frames = pipeline.wait_for_frames()
+    color_frame = frames.get_color_frame()
+
+    if not color_frame:
+        return None
+
+    # Convert RealSense image to numpy array
+    color_image = np.asanyarray(color_frame.get_data())
+    
+    return color_image
 
 def load_config(file_name):
     """
@@ -211,7 +240,7 @@ def mapping_bbox(box1, box2):
 def tracking(detector, args):
     """
     Face tracking in a separate thread.
-
+    
     Args:
         detector: The face detector.
         args (dict): Tracking configuration parameters.
@@ -225,10 +254,11 @@ def tracking(detector, args):
     tracker = BYTETracker(args=args, frame_rate=30)
     frame_id = 0
 
-    cap = cv2.VideoCapture(0)
-
     while True:
-        _, img = cap.read()
+        img = get_frame_from_realsense()  # 使用RealSense相机获取图像帧
+
+        if img is None:
+            continue
 
         tracking_image = process_tracking(img, detector, tracker, args, frame_id, fps)
 
@@ -245,6 +275,7 @@ def tracking(detector, args):
         ch = cv2.waitKey(1)
         if ch == 27 or ch == ord("q") or ch == ord("Q"):
             break
+
 
 
 def recognize():
@@ -277,6 +308,7 @@ def recognize():
                     break
 
         if tracking_bboxes == []:
+            
             print("Waiting for a person...")
 
 

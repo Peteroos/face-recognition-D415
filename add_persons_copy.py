@@ -6,7 +6,6 @@ import cv2
 import numpy as np
 import torch
 from torchvision import transforms
-from tqdm import tqdm  # 导入tqdm库
 
 from face_detection.scrfd.detector import SCRFD
 from face_detection.yolov5_face.detector import Yolov5Face
@@ -18,7 +17,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Initialize the face detector (Choose one of the detectors)
 # detector = Yolov5Face(model_file="face_detection/yolov5_face/weights/yolov5n-face.pt")
-detector = SCRFD(model_file="face_detection/scrfd/weights/scrfd_10g_bnkps.onnx")
+detector = SCRFD(model_file="face_detection/scrfd/weights/scrfd_2.5g_bnkps.onnx")
 
 # Initialize the face recognizer
 recognizer = iresnet_inference(
@@ -74,22 +73,15 @@ def add_persons(backup_dir, add_persons_dir, faces_save_dir, features_path):
     images_name = []
     images_emb = []
 
-    # 获取总人数用于进度条显示
-    total_persons = len(os.listdir(add_persons_dir))
-
-    # 读取新增人员图像文件夹，并显示进度条
-    for name_person in tqdm(os.listdir(add_persons_dir), desc="Processing persons", total=total_persons):
+    # Read the folder with images of the new person, extract faces, and save them
+    for name_person in os.listdir(add_persons_dir):
         person_image_path = os.path.join(add_persons_dir, name_person)
 
         # Create a directory to save the faces of the person
         person_face_path = os.path.join(faces_save_dir, name_person)
         os.makedirs(person_face_path, exist_ok=True)
 
-        # 获取该人员的图像数，用于进度条
-        total_images = len(os.listdir(person_image_path))
-
-        # 遍历人员图像，并显示进度条
-        for image_name in tqdm(os.listdir(person_image_path), desc=f"Processing {name_person}", total=total_images, leave=False):
+        for image_name in os.listdir(person_image_path):
             if image_name.endswith(("png", "jpg", "jpeg")):
                 input_image = cv2.imread(os.path.join(person_image_path, image_name))
 
